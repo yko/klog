@@ -1,0 +1,69 @@
+div { white-space: pre; font-family: monospace;  }
+div.navbar {
+ white-space:normal;
+}
+span#main {
+ margin: 15px 0 15px 0;
+ display: block;
+}
+span.sg {
+ font-size: 80%;
+}
+a:link, a:hover, a:hover, a:active, a:visited {
+ text-decoration: none;
+ color:#56a1f6; 
+}
+a:hover {
+ text-decoration: underline;
+}
+.irc_white { color: white; }
+.irc_black { color: black; }
+.irc_navy { color: #00007f; }
+.irc_green { color: #009300; }
+.irc_red { color: red; }
+.irc_maroon { color: #7f0000; }
+.irc_purple { color: #9c009c; }
+.irc_olive { color: #fc7f00; }
+.irc_yellow { color: #ffff00; }
+.irc_lime { color: #00fc00; }
+.irc_teal { color: #009393; }
+.irc_aqua { color: #00ffff; }
+.irc_royal { color: #0000fc; }
+.irc_light_purple { color: #ff00ff; }
+.irc_grey { color: #7f7f7f; }
+.irc_silver { color: #d2d2d2; }
+
+span.keyword {color: #00f}
+span.keyword2 {color: #808}
+span.number {color: #f00}
+span.identifier {color: #a66}
+span.function {color: #a66; text-decoration: underline}
+span.method {color: #a66; text-decoration: underline}
+span.variable {color: #f80}
+span.statement {color: #00f}
+span.comment {color: #080}
+span.perlpod {color: #080}
+span.quote {color: #a66}
+span.wquote {color: #600}
+span.value {color: #a66}
+/* span.regexp_statement {background: #ffa} */
+span.tag {color: #00f}
+span.url {color: #00f; text-decoration: underline}
+
+span.time { color: #bfbfbf; }
+span.time a {
+ text-decoration: none;
+ color: #bfbfbf;
+}
+span.time a:hover {
+ text-decoration: underline;
+}
+
+div.repl span.time { color: #dfdfdf; }
+
+div.hl span.time, div.hl span.time a { color: #e70000; }
+div.hl { font-weight: bold; color: #e70000; }
+
+span.nick { font-weight: bold; }
+div.repl span.nick { color: #e4e4e4; }
+div.repl.hl span.nick { color: #ffaaaa; }

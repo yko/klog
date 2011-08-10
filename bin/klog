@@ -1,0 +1,125 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use lib 'lib';
+
+# I really need all this stuff %)
+use POE qw(Component::IRC::State Klog
+  Component::IRC::Plugin::Console
+  Component::IRC::Plugin::Connector
+  Component::IRC::Plugin::CycleEmpty
+);
+
+use Getopt::Long;
+my %conf = (
+    'nickname'     => 'klog',
+    'ircname'      => 'kiev.pm bot v' . $Klog::VERSION,
+    'server'       => 'irc.perl.org',
+    'port'         => 6667,
+    'channels'     => [],
+    'db_host'      => '127.0.0.1',
+    'db_port'      => 3306,
+    'db_user'      => '',
+    'db_password'  => '',
+    'db_driver'    => 'mysql',
+    'db_database'  => 'irc_log',
+    'console_port' => 5009,
+    'console_pass' => 'secret',
+);
+
+GetOptions(
+    'nickname=s'     => \$conf{'nickname'},
+    'ircname=s'      => \$conf{'ircname'},
+    'server=s'       => \$conf{'server'},
+    'port=i'         => \$conf{'port'},
+    'channels:s{,}'  => $conf{'channels'},
+    'db_host=s'      => \$conf{'db_host'},
+    'db_port=i'      => \$conf{'db_port'},
+    'db_user=s'      => \$conf{'db_user'},
+    'db_password=s'  => \$conf{'db_password'},
+    'db_driver=s'    => \$conf{'db_driver'},
+    'db_database=s'  => \$conf{'db_database'},
+    'console_port=i' => \$conf{'console_port'},
+    'console_pass=s' => \$conf{'console_pass'}
+);
+
+$conf{'channels'} = [grep($_ !~ /^\s*$/, @{$conf{'channels'}})];
+if ($#{$conf{'channels'}} < 0) {
+    $conf{'channels'} = ['#kiev.pm'];
+}
+print "got channels: " . join(', ', @{$conf{'channels'}}) . "\n";
+
+my $irc = POE::Component::IRC::State->spawn(
+    nick    => $conf{'nickname'},
+    ircname => $conf{'ircname'},
+    server  => $conf{'server'},
+    port    => $conf{'port'},
+) or die "Oh noooo! $!";
+
+$irc->plugin_add('Logger',
+    POE::Klog->new(map { substr($_, 3) => $conf{$_} } grep /^db_/, keys %conf));
+
+use Data::Dumper;
+print Dumper(\%conf);
+
+POE::Session->create(
+    package_states => [main => [qw(_start irc_001)],],
+    heap           => {irc  => $irc},
+);
+
+
+$poe_kernel->run();
+
+
+sub _start {
+    my $heap = $_[HEAP];
+
+# retrieve our component's object from the heap where we stashed it
+
+    $poe_kernel->sig(DIE => 'sig_DIE');
+    my $irc = $heap->{irc};
+
+# Console password is possible to be default: only it listen only to 127.0.0.1
+    $irc->plugin_add(
+        'Console',
+        POE::Component::IRC::Plugin::Console->new(
+            bindport => $conf{'console_port'},
+            password => $conf{'console_pass'}
+        )
+    );
+
+    $irc->plugin_add('Connector' =>
+          POE::Component::IRC::Plugin::Connector->new(reconnect => 3));
+    $irc->plugin_add('CycleEmpty',
+        POE::Component::IRC::Plugin::CycleEmpty->new());
+
+    $irc->yield(register => 'all');
+    $irc->yield(connect  => {});
+    return;
+}
+
+sub sig_DIE {
+    my ($sig, $ex) = @_[ARG0, ARG1];
+
+# Does it work?
+    warn "$$: error: $ex->{error_str}";
+    $poe_kernel->sig_handled();
+
+    # Send the signal to session that sent the original event.
+    if ($ex->{source_session} ne $_[SESSION]) {
+        $poe_kernel->signal($ex->{source_session}, 'DIE', $sig, $ex);
+    }
+}
+
+
+sub irc_001 {
+    my $sender = $_[SENDER];
+
+    my $irc = $sender->get_heap();
+
+    print "Connected to ", $irc->server_name(), "\n";
+
+# we join our channels
+    $irc->yield(join => $_) for @{$conf{'channels'}};
+    return 1;
+}

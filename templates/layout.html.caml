@@ -1,0 +1,15 @@
+<!doctype html>
+<html>
+<head>
+ <link rel="stylesheet" href="css/main.css" /> 
+</head>
+<body>
+ {{&nav}}
+ <span id='main'>
+ {{&content}}
+ </span>
+ {{&nav}}
+ <br />
+ <span class='sg'><hr style='width: 50px;' align='left' />klog - simple irc logger by yko</span>
+</body>
+</html>
