@@ -1,1 +1,1 @@
-<div class='repl {{class}}'><span class='time'>[<a name='q{{id}}' href='?chan={{chan}}&hl={{id}}#q{{qid}}'>{{time}}</a>]</span> <span class='nick'>{{nick}}:</span> {{message}}</div>
+<div class='repl {{class}}'><span class='time'>[<a name='q{{id}}' href='?chan={{chan}}&hl={{id}}#q{{qid}}'>{{time}}</a>]</span> <span class='nick'>{{nick}}:</span> {{&message}}</div>

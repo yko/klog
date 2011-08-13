@@ -6,11 +6,22 @@ use Data::Dumper;
 use DBI;
 use Encode;
 use List::Util 'max', 'min';
+use URI::Find;
 use utf8;
 
 sub new {
     my $class = shift;
-    bless {@_}, $class;
+    my $self = bless {@_}, $class;
+    $self->{finder} ||= URI::Find->new(sub { $self->replace_urls(@_) });
+
+    $self;
+}
+
+sub replace_urls {
+    my $self = shift;
+    my ($url) = @_;
+
+    $self->render_template('url', url => $url);
 }
 
 sub index {
@@ -154,6 +165,14 @@ sub render_message {
 
     @params{'date', 'time'} = split / /, $row->{'time'}, 2;
 
+    if ($row->{event} eq 'public' && $row->{message}) {
+        $row->{message} =~ s/</&lt;/g;
+        $row->{message} =~ s/>/&gt;/g;
+        $row->{message} =~ s/&/&amp;/g;
+        $row->{message} =~ s/"/&quot;/g;
+        $self->{finder}->find(\$row->{message});
+    }
+
     $self->render_template($type, %$row, %params)
 }
 
@@ -177,10 +196,8 @@ sub render_template {
     my $template = shift;
 
     my $renderer = $self->{renderer};
-    my $result =
-      $renderer->render_file('templates/' . $template . '.html.caml', @_);
 
-    $result;
+    $renderer->render_file('templates/' . $template . '.html.caml', @_);
 }
 
 1;
