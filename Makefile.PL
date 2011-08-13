@@ -17,6 +17,7 @@ requires 'DBD::mysql';
 requires 'Routes::Tiny';
 requires 'Text::Caml';
 requires 'Plack';
+requires 'URI::Find';
 
 build_requires 'Test::More';
 
