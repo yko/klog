@@ -1,6 +1,6 @@
 <div class='navbar'>
  {{#next}}<a class='back' href='?chan={{chan}}&skip={{next}}'>&lt;&lt;</a>{{/next}}
  {{pos}}
- {{#back}}<a class='back' href='?chan={{chan}}&skip={{prev}}'>&gt;&gt;</a>{{/back}}
+ {{#back}}<a class='back' href='?chan={{chan}}&skip={{back}}'>&gt;&gt;</a>{{/back}}
  {{home}}
 </div>
