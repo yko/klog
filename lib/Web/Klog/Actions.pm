@@ -22,8 +22,8 @@ sub index {
 
     $self->{start} = $env->param('skip');
 
-    if (!defined($self->{start}) || $self->{start} !~ /^\d+$/) {
-        $self->{start} = 0;
+    if (!$self->{start} || $self->{start} !~ /^\d+$/) {
+        $self->{start} = 1;
     }
 
     my $chan = $env->param('chan') || 'ru.pm';
@@ -76,13 +76,13 @@ sub index {
     }
 
     $self->{start} = min $self->{start}, $count - $self->{show};
-    $self->{start} = max $self->{start}, 0;
+    $self->{start} = max $self->{start}, 1;
 
     my $data = $db->selectall_arrayref(
         'SELECT *, unix_timestamp(`time`) AS time_unix  FROM `' 
           . $tbl
           . '` ORDER BY `time` DESC, id DESC LIMIT ?, ?',
-        {Slice => {}}, $self->{start}, $self->{show}
+        {Slice => {}}, $self->{start}-1, $self->{show}
     );
     my $body;
 
@@ -93,7 +93,7 @@ sub index {
     my $need_navbar;
 
     my $nav_param = {chan => $chan};
-    if ($self->{start} > 0) {
+    if ($self->{start} > 1) {
         $nav_param->{next} = max $self->{start} - $self->{show}, 1;
         $need_navbar++;
     }
