@@ -19,7 +19,7 @@ sub index {
     $self->{prev_nick} = '';
 
 
-    my $self->{start} = $env->param('skip');
+    $self->{start} = $env->param('skip');
 
     if (!defined($self->{start}) || $self->{start} !~ /^\d+$/) {
         $self->{start} = 0;
@@ -95,20 +95,20 @@ sub index {
 
     my $nav_param = {};
     if ($self->{start} > 0) {
-        $nav_param->{next} = $self->{start} > $sself->{how} ? $self->{start} - $self->{show} : 0;
+        $nav_param->{next} = $self->{start} > $self->{how} ? $self->{start} - $self->{show} : 0;
         $need_navbar++;
     }
 
     if ($count > $self->{start} +  $self->{show}) {
-        $nav_param->{back} = $self->{start} + $self->{show});
+        $nav_param->{back} = $self->{start} + $self->{show};
         $need_navbar++;
     }
     if ($need_navbar) {
         $nav_param->{pos} = $self->{start};
     }
 
-    my $navbar =
-      $need_navbar ? $self->render_template('navbar', %$nav_param) : '';
+    my $navbar = '';
+#      $need_navbar ? $self->render_template('navbar', %$nav_param) : '';
 
     $body = $self->render('index', body => $body, navbar => $navbar);
 
@@ -123,7 +123,6 @@ sub index {
 }
 
 sub render_navbar {
-    my $
 }
 
 sub render_message {
