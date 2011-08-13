@@ -5,6 +5,7 @@ use Text::Caml;
 use Data::Dumper;
 use DBI;
 use Encode;
+use List::Util 'max', 'min';
 use utf8;
 
 sub new {
@@ -25,7 +26,7 @@ sub index {
         $self->{start} = 0;
     }
 
-    my $chan = $env->param('chan') || '#ru.pm';
+    my $chan = $env->param('chan') || 'ru.pm';
     $chan =~ s/\./_/g;
 
     my $min  = -1;
@@ -55,11 +56,11 @@ sub index {
 
 
     my ($tbl) = $db->selectrow_array(
-        'SHOW TABLE STATUS WHERE NAME = ' . $db->quote($chan . "_log"));
+        'SHOW TABLE STATUS WHERE NAME = ' . $db->quote('#' . $chan . "_log"));
 
     unless ($tbl) {
         my $body = $self->render('index',
-            body => "This channel was never logged: $chan");
+            body => "This channel was never logged: #$chan");
         return [200, [], [$body]];
     }
 
@@ -74,10 +75,8 @@ sub index {
               . ($min + $self->{show} - 3));
     }
 
-    if ($self->{start} > $count - $self->{show}) {
-        $self->{start} = $count - $self->{show};
-        if ($self->{start} < 0) { $self->{start} = 0 }
-    }
+    $self->{start} = min $self->{start}, $count - $self->{show};
+    $self->{start} = max $self->{start}, 0;
 
     my $data = $db->selectall_arrayref(
         'SELECT *, unix_timestamp(`time`) AS time_unix  FROM `' 
@@ -93,9 +92,9 @@ sub index {
 
     my $need_navbar;
 
-    my $nav_param = {};
+    my $nav_param = {chan => $chan};
     if ($self->{start} > 0) {
-        $nav_param->{next} = $self->{start} > $self->{how} ? $self->{start} - $self->{show} : 0;
+        $nav_param->{next} = max $self->{start} - $self->{show}, 1;
         $need_navbar++;
     }
 
@@ -103,14 +102,15 @@ sub index {
         $nav_param->{back} = $self->{start} + $self->{show};
         $need_navbar++;
     }
-    if ($need_navbar) {
-        $nav_param->{pos} = $self->{start};
-    }
 
     my $navbar = '';
-#      $need_navbar ? $self->render_template('navbar', %$nav_param) : '';
 
-    $body = $self->render('index', body => $body, navbar => $navbar);
+    if ($need_navbar) {
+        $nav_param->{pos} = $self->{start};
+        $navbar = $self->render_template('navbar', %$nav_param);
+    }
+
+    $body = $self->render('index', body => $body, nav => $navbar);
 
     my $content_type = 'text/html';
     if (Encode::is_utf8($body)) {
