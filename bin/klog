@@ -45,7 +45,7 @@ GetOptions(
 
 $conf{'channels'} = [grep($_ !~ /^\s*$/, @{$conf{'channels'}})];
 if ($#{$conf{'channels'}} < 0) {
-    $conf{'channels'} = ['#kiev.pm'];
+    $conf{'channels'} = ['#ru.pm'];
 }
 print "got channels: " . join(', ', @{$conf{'channels'}}) . "\n";
 
