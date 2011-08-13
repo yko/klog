@@ -1,7 +1,7 @@
 use Test::More tests => 1;
 
 BEGIN {
-use_ok( 'IRC::Klog' );
+use_ok( 'POE::Klog' );
 }
 
-diag( "Testing IRC::Klog $IRC::Klog::VERSION" );
+diag( "Testing POE::Klog $POE::Klog::VERSION" );

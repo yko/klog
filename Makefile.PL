@@ -1,7 +1,7 @@
 use inc::Module::Install;
 
 name     'klog';
-all_from 'lib/IRC/Klog.pm';
+all_from 'lib/POE/Klog.pm';
 author   q{Yaroslav Korshak <yko@cpan.org>};
 license  'perl';
 
