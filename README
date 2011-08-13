@@ -1,21 +1,15 @@
 NAME
 
-klog
+klog - kiev.pm irc logger
 
-[ REPLACE THIS...
+DESCRIPTION
 
-  The README is used to introduce the module and provide instructions on
-  how to install the module, any machine dependencies it may have (for
-  example C compilers and installed libraries) and any other information
-  that should be understood before the module is installed.
+Minimalistyc logger with web interface
 
-  A README file is required for CPAN modules since CPAN extracts the
-  README file from a module distribution so that people browsing the
-  archive can use it get an idea of the modules uses. It is usually a
-  good idea to provide version information here so that people can
-  decide whether fixes for the module are worth downloading.
-]
+WARNING
 
+This software is under heavy development,
+nothing is guarantied, everything can change.
 
 INSTALLATION
 
