@@ -53,7 +53,7 @@ sub _start {
           . ';host='
           . $self->{'params'}{'host'},
         @{$self->{'params'}}{qw/user password/},
-        {mysql_auto_reconnect => 1}
+        {mysql_auto_reconnect => 1, mysql_enable_utf8 => 1}
     );
 
     unless ($self->{'db'}) { die "Uneable connect db: " . $DBI::errstr }
