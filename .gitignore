@@ -3,6 +3,7 @@
 !.perltidyrc
 *~
 blib
+inc
 Makefile*
 !Makefile.PL
 *META.yml
