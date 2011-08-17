@@ -166,9 +166,9 @@ sub render_message {
     @params{'date', 'time'} = split / /, $row->{'time'}, 2;
 
     if ($row->{event} eq 'public' && $row->{message}) {
+        $row->{message} =~ s/&/&amp;/g;
         $row->{message} =~ s/</&lt;/g;
         $row->{message} =~ s/>/&gt;/g;
-        $row->{message} =~ s/&/&amp;/g;
         $row->{message} =~ s/"/&quot;/g;
         $self->{finder}->find(\$row->{message});
     }
