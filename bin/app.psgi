@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Web::Klog;
+use Klog;
 
-my $app = Web::Klog->new;
+my $app = Klog->new;
 
 $app->to_psgi;

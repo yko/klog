@@ -1,4 +1,4 @@
-package Web::Klog;
+package Klog;
 
 use warnings;
 use strict;
@@ -7,7 +7,7 @@ require Carp;
 use Plack::Builder;
 use Routes::Tiny;
 use Plack::Request;
-use Web::Klog::Actions;
+use Klog::Controller;
 use Text::Caml;
 use FindBin;
 use File::Spec;
@@ -20,10 +20,21 @@ sub new {
     my $class = shift;
     my $self  = bless {@_}, $class;
     $self->{renderer} = Text::Caml->new;
+    $self->{renderer}->set_templates_path('templates');
 
-    my $r     = $self->{routes} = Routes::Tiny->new;
+    $self->setup_routes;
 
-    $r->add_route('/', name => 'index');
+    $self;
+}
+
+sub setup_routes {
+    my $self = shift;
+
+    return $self if $self->{routes};
+
+    my $r = $self->{routes} = Routes::Tiny->new;
+
+    $r->add_route('/', name => 'index', defaults => {controller => 'Log'});
 
     $self;
 }
@@ -32,33 +43,16 @@ sub to_psgi {
     my $self = shift;
     builder {
         my $env = shift;
+
+        $env->{'klog.renderer'} = $self->{renderer};
+
         enable 'Static' => path =>
           qr{\.(?:js|css|jpe?g|gif|ico|png|html?|swf|txt)$},
           root => File::Spec->catdir($FindBin::Bin, '..', 'htdocs');
 
-        enable sub {
-            my $app = shift;
-
-            sub {
-                my $env    = shift;
-                my $path   = $env->{PATH_INFO};
-                my $method = $env->{REQUEST_METHOD};
-
-                my $m = $self->{routes}->match($path, method => lc $method);
-                warn "No route " unless $m;
-                return $app->($env) unless $m;
-
-                my $action_method = $m->{name};
-                if (Web::Klog::Actions->can($action_method)) {
-                    my $action =
-                      Web::Klog::Actions->new(renderer => $self->{renderer});
-                    my $request = Plack::Request->new($env);
-                    return $action->$action_method($request);
-                }
-
-                return $app->($env);
-            };
-        };
+        enable '+Klog::Middleware::Dispatcher',
+          routes   => $self->{routes},
+          renderer => $self->{renderer};
 
         enable 'ContentLength';
 
@@ -68,7 +62,6 @@ sub to_psgi {
 
 sub default {
     sub {
-                warn " Got nothing";
         [404, [], ["Not found"]];
     };
 }
