@@ -1,5 +1,6 @@
-package Klog::Controller;
+package Klog::Web::Controller;
 require File::Spec;
+require Class::Load;
 
 sub new {
     my $class = shift;
@@ -8,6 +9,9 @@ sub new {
 
 sub env { shift->{env}; }
 
+sub params {
+    shift->{env}->{'klog.req.match'}->{params};
+}
 sub req {
     my $self = shift;
 
@@ -69,7 +73,7 @@ sub render {
 }
 
 sub render_template {
-    my $self = shift;
+    my $self     = shift;
     my $template = shift;
 
     my $renderer = $self->{renderer};
@@ -82,6 +86,22 @@ sub rendered {
     my $self = shift;
     return unless $self->{res};
     $self->{res}->code || $self->{res}->body;
+}
+
+sub model {
+    my $self = shift;
+    my ($name) = @_;
+    unless ($name) {
+        my $namespace = __PACKAGE__;
+        $name = ref $self;
+        $name =~ s/^\Q$namespace\E:://;
+    }
+
+    if (exists $self->{models}{$name}) {
+        return $self->{models}{$name};
+    }
+
+    $self->{models}{$name} ||= $self->{models_factory}->($name);
 }
 
 1;

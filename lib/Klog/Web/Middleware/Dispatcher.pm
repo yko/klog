@@ -1,4 +1,4 @@
-package Klog::Middleware::Dispatcher;
+package Klog::Web::Middleware::Dispatcher;
 
 use strict;
 use warnings;
@@ -33,7 +33,7 @@ sub render {
 
     my $action     = $m->{name};
     my $controller = String::CamelCase::camelize($m->{params}{controller});
-    my $namespace  = $m->{ns} || 'Klog::Controller';
+    my $namespace  = $m->{ns} || 'Klog::Web::Controller';
 
     my $class = $controller;
     unless ($class =~ s/^\+//) {
@@ -44,13 +44,14 @@ sub render {
     try {
         Class::Load::load_class($class);
 
-        $result = $self->run_action($class, $action, $env);
     }
     catch {
         $class =~ s{::}{/}g;
 
         die $_ unless $_ =~ m{^Can't locate $class\.pm in \@INC };
     };
+
+    $result = $self->run_action($class, $action, $env);
 
     return $result if $result;
 
@@ -61,8 +62,11 @@ sub run_action {
     my $self = shift;
     my ($class, $action, $env) = @_;
 
-    my $controller =
-      $class->new(env => $env, renderer => $self->{renderer});
+    my $controller = $class->new(
+        env            => $env,
+        renderer       => $self->{renderer},
+        models_factory => $self->{models_factory}
+    );
 
     $controller->$action();
 
@@ -82,7 +86,7 @@ sub render_env {
 
     my $content_type = 'text/html';
     if (Encode::is_utf8($body)) {
-        my $body = Encode::encode('UTF-8', $body);
+        $body = Encode::encode('UTF-8', $body);
         $content_type .= '; charset=utf-8'
           unless $content_type =~ /;\s*charset=/;
     }

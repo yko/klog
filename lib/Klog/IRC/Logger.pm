@@ -1,4 +1,4 @@
-package POE::Klog;
+package Klog::IRC::Logger;
 
 use warnings;
 use strict;
@@ -7,7 +7,6 @@ require Carp;
 use POE;
 use POE::Component::IRC::Plugin qw( :ALL );
 use POE::Component::IRC::Common qw( parse_user );
-use DBI;
 
 require Klog::Model;
 require Klog::Config;
@@ -19,11 +18,42 @@ sub new {
     my $class = shift;
     my $self  = {@_};
 
-    $self->{config} ||= Klog::Config->load;
-    $self->{model}
-      ||= Klog::Model->new(config => $self->{config})->build('Log');
-
     return bless $self, $class;
+}
+
+sub _channels {
+    my $self = shift;
+    return $self->{channels} if $self->{channels};
+
+    my $string = $self->{config}{channels};
+    my @channels = grep $_, split /\s*,\s*/, $string;
+    @channels = map { /^#/ ? $_ : "#$_" } @channels;
+
+    $self->{channels} = \@channels;
+}
+
+sub PCI_register {
+    my ($self, $irc) = @_;
+
+    # Register events we are interested in
+    $irc->plugin_register($self, 'SERVER',
+        qw(public mode quit join part ctcp_action 353 001));
+
+    $self->{SESSION_ID} =
+      POE::Session->create(object_states => [$self => [qw(_start _shutdown)]])
+      ->ID();
+
+    return 1;
+}
+
+sub S_001 {
+    my $self = $_[0];
+    my $irc  = $_[1];
+
+    print "Connected to ", $irc->server_name(), "\n";
+
+    $irc->yield(join => $_) for @{$self->_channels};
+    return 1;
 }
 
 sub _start {
@@ -39,49 +69,8 @@ sub _shutdown {
     $kernel->refcount_decrement($self->{SESSION_ID}, __PACKAGE__);
 }
 
-sub _channels {
-    my $self = shift;
-    return $self->{channels} if $self->{channels};
-
-    my $string = $self->{config}{irc}{channels};
-    my @channels = grep $_, split /\s*,\s*/, $string;
-
-    $self->{channels} = \@channels;
-}
-
-# Required entry point for PoCo-POE
-sub PCI_register {
-    my $self = shift;
-    my ($irc) = @_;
-    $self->SUPER::PCI_register(@_);
-
-    # Register events we are interested in
-    $irc->plugin_register($self, 'SERVER',
-        qw(public mode quit join part ctcp_action 353 irc_001));
-    $self->{SESSION_ID} =
-      POE::Session->create(object_states => [$self => [qw(_start _shutdown)]])
-      ->ID();
-
-    # Return success
-    return 1;
-}
-
-sub irc_001 {
-    my $self   = $_[0];
-    my $sender = $_[SENDER];
-
-    my $irc = $sender->get_heap();
-
-    print "Connected to ", $irc->server_name(), "\n";
-
-    $irc->yield(join => $_) for @{$self->_channels};
-    return 1;
-}
-
-# Required exit point for PoCo-POE
 sub PCI_unregister {
     my ($self, $irc) = @_;
-    $poe_kernel->call($self->{SESSION_ID} => '_shutdown');
 
     return 1;
 }
@@ -146,14 +135,11 @@ sub S_353 {
     PCI_EAT_NONE;
 }
 
-# join and part (and maybe quit) are simirar
 sub S_join {
-    my ($self, $irc) = @_;
-    my ($joiner, $user, $host) = parse_user(${$_[2]});
-    my $chan = ${$_[3]};
+    my ($self, $irc, $sender, $chan) = @_;
+    my ($joiner, $user, $host) = parse_user($sender);
 
-    unshift @_, 'join';
-    &jp;
+    $self->Log('part', ${$chan}, ${$sender});
 
     if ($joiner eq $irc->nick_name) {
         $irc->{'awaiting_names'}{$chan} = 1;
@@ -162,15 +148,10 @@ sub S_join {
     PCI_EAT_NONE;
 }
 
-sub S_part { unshift @_, 'part'; &jp }
+sub S_part {
+    my ($self, $irc, $sender, $chan, $msg) = @_;
 
-sub jp {
-    my ($event, $self, $irc) = splice @_, 0, 3;
-    my ($sender, $chan, $msg) = @_;
-
-# but there is some diff
-    $self->Log($event, ${$chan}, ${$sender},
-        $event ne 'join' ? ${$msg} : undef);
+    $self->Log('part', ${$chan}, ${$sender}, ${$msg});
 }
 
 sub S_mode {
@@ -186,7 +167,6 @@ sub S_mode {
     }
     return PCI_EAT_NONE;
 }
-
 
 # Log takes event-type, channel and event-specific args
 # and put it all into db

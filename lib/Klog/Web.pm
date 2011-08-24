@@ -1,16 +1,19 @@
-package Klog;
+package Klog::Web;
 
 use warnings;
 use strict;
 require Carp;
 
 use Plack::Builder;
-use Routes::Tiny;
 use Plack::Request;
-use Klog::Controller;
+use Routes::Tiny;
 use Text::Caml;
 use FindBin;
 use File::Spec;
+
+use Klog::Web::Controller;
+use Klog::Config;
+use Klog::Model;
 
 use overload '&{}' => \&to_psgi;
 
@@ -18,13 +21,18 @@ our $VERSION = 0.03;
 
 sub new {
     my $class = shift;
-    my $self  = bless {@_}, $class;
+    my $self = bless {@_}, $class;
     $self->{renderer} = Text::Caml->new;
     $self->{renderer}->set_templates_path('templates');
 
     $self->setup_routes;
 
     $self;
+}
+
+sub config {
+    my $self = shift;
+    $self->{config} ||= Klog::Config->load;
 }
 
 sub setup_routes {
@@ -35,8 +43,19 @@ sub setup_routes {
     my $r = $self->{routes} = Routes::Tiny->new;
 
     $r->add_route('/', name => 'index', defaults => {controller => 'Log'});
+    $r->add_route(
+        '/chan/:chan',
+        name     => 'index',
+        defaults => {controller => 'Log'}
+    );
 
     $self;
+}
+
+sub models_factory {
+    my $self = shift;
+
+    $self->{model_factory} ||= Klog::Model->new(config => $self->config)->builder;
 }
 
 sub to_psgi {
@@ -50,9 +69,10 @@ sub to_psgi {
           qr{\.(?:js|css|jpe?g|gif|ico|png|html?|swf|txt)$},
           root => File::Spec->catdir($FindBin::Bin, '..', 'htdocs');
 
-        enable '+Klog::Middleware::Dispatcher',
+        enable '+Klog::Web::Middleware::Dispatcher',
           routes   => $self->{routes},
-          renderer => $self->{renderer};
+          renderer => $self->{renderer},
+          models_factory => sub { $self->models_factory->build(@_) };
 
         enable 'ContentLength';
 
