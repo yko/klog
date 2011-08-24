@@ -4,7 +4,6 @@ use warnings;
 
 use base 'Klog::Web::Controller';
 use Text::Caml;
-use Data::Dumper;
 use DBI;
 use Encode;
 use List::Util 'max', 'min';

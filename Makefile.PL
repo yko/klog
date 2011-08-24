@@ -1,7 +1,7 @@
 use inc::Module::Install;
 
 name     'klog';
-all_from 'lib/POE/Klog.pm';
+all_from 'lib/Klog/Web.pm';
 author   q{Yaroslav Korshak <yko@cpan.org>};
 license  'perl';
 
@@ -13,6 +13,8 @@ requires 'List::Util';
 requires 'POE';
 requires 'POE::Component::IRC';
 requires 'DBI';
+requires 'Class::Load';
+requires 'String::CamelCase';
 requires 'DBD::mysql';
 requires 'Routes::Tiny';
 requires 'Text::Caml';
