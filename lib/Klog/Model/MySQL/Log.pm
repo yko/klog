@@ -34,13 +34,27 @@ sub get_page {
     $conn->run(
         sub {
             my $dbh = shift;
+            warn "Starting rom $params->{start} - $params->{size}";
+            my @binds;
+            my $need_reverse;
+            my $query =
+              "SELECT *, unix_timestamp(`time`) AS time_unix FROM $table ";
 
-            my $data = $dbh->selectall_arrayref(
-                "SELECT *, unix_timestamp(`time`) AS time_unix FROM $table
-                 WHERE id >= ? ORDER BY `time` DESC, id DESC LIMIT ?",
-                {Slice => {}}, $params->{start}, $params->{size}
-            );
-            return [reverse @$data];
+            if ($params->{start}) {
+                $query .= "WHERE id >= ?";
+                push @binds, $params->{start};
+            }
+            else {
+                $need_reverse++;
+            }
+            my $order = $need_reverse ? 'DESC' : 'ASC';
+            $query .= " ORDER BY `time` $order, id $order LIMIT ?";
+            push @binds, $params->{size};
+
+            my $data =
+              $dbh->selectall_arrayref($query, {Slice => {}}, @binds);
+
+            return $need_reverse ? [reverse @$data] : $data;
         }
     );
 }
