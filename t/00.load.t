@@ -1,7 +1,7 @@
 use Test::More tests => 1;
 
 BEGIN {
-use_ok( 'POE::Klog' );
+use_ok( 'Klog::Web' );
 }
 
-diag( "Testing POE::Klog $POE::Klog::VERSION" );
+diag( "Testing Klog $Klog::Web::VERSION" );
