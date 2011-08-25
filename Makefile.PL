@@ -13,6 +13,7 @@ requires 'List::Util';
 requires 'POE';
 requires 'POE::Component::IRC';
 requires 'DBI';
+requires 'DBIx::Connector';
 requires 'Class::Load';
 requires 'String::CamelCase';
 requires 'DBD::mysql';
