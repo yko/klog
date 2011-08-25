@@ -24,7 +24,6 @@ sub get_page {
     unless (exists $self->{channels}{$channel}) {
         $self->{channels}{$channel} = $self->_channel_table_exists($channel);
     }
-    warn "No chan table $channel" unless $self->{channels}{$channel};
 
     my $table = $self->{channels}{$channel};
     return unless $table;
@@ -71,7 +70,8 @@ sub _channel_table_exists {
               $dbh->selectrow_array('SHOW TABLE STATUS WHERE NAME = ?',
                 undef, $self->_channel_to_table($chan));
 
-            warn "Got table for " . $self->_channel_to_table($chan) . "\n";
+            return unless $table;
+
             return $self->{channels}{$chan} =
               $dbh->quote_identifier($table);
         }
@@ -81,7 +81,7 @@ sub _channel_table_exists {
 sub _create_table_for_channel {
     my $self   = shift;
     my ($chan) = @_;
-    my $table  = $self->_channel_to_able($chan);
+    my $table  = $self->_channel_to_table($chan);
 
     if (exists $self->{channels}{$table}) { return 1 }
 
