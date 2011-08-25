@@ -20,6 +20,7 @@ requires 'Routes::Tiny';
 requires 'Text::Caml';
 requires 'Plack';
 requires 'URI::Find';
+requires 'Config::INI';
 
 build_requires 'Test::More';
 
