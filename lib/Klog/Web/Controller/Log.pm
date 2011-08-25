@@ -25,15 +25,15 @@ sub index {
     my %params = (channel => $chan, size => 40);
     $params{start} = $env->param('start');;
     if (!$params{start} || $params{start} !~ /^\d+$/) {
-        $params{start} = 1;
+        delete $params{start};
     }
     if (@hl_params) {
+        $params{start} ||= $hl_params[0] - 3;
         $params{start} = min $hl_params[0] - 3, $params{start};
         $params{start} = max $params{start}, 1;
     }
 
-    my $model = $self->model;
-    my $data = $model->get_page(%params);
+    my $data = $self->model->get_page(%params);
 
     unless ($data) {
         $self->set_var(body => "This channel was never logged: #$chan");
@@ -66,7 +66,7 @@ sub render_navbar {
     }
 
     if (@{$params->{data}} >= $params->{size}) {
-        $nav_param->{back} = $params->{data}->[0]->{id} - 1;
+        $nav_param->{back} = $params->{data}->[-1]->{id};
         $need_navbar++;
     }
 
