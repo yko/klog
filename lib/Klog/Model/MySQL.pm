@@ -11,11 +11,10 @@ sub new {
     my $config = $self->{config};
 
     # FIXME: very unsafe way to build DSN
-    my $dsn = 'dbi:mysql';
+    my $dsn = 'dbi:mysql:';
     if (exists $config->{driver_opts}) {
-        $dsn .= '(' . $config->{driver_opts} . ')';
+        $dsn .= ';' . $config->{driver_opts};
     }
-    $dsn .= ':';
     for (qw/database host port/) {
         if (exists $config->{$_}) {
             $dsn .= ";${_}=" . $config->{$_};
