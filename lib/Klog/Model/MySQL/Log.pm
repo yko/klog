@@ -5,12 +5,12 @@ use warnings;
 
 sub new { my $class = shift; bless {@_}, $class }
 
-sub dbh { shift->{conn}->dbh }
+sub dbh { shift->{dbh} }
 
 =head2 get_page
 
     $self->get_page(
-        channel => 'chan_name, start => $id, size => 100);
+        channel => 'chan_name', start => $id, size => 100);
 
 Returns hashref of log lines starting from start id with max size 'size'.
 
@@ -28,35 +28,25 @@ sub get_page {
     my $table = $self->{channels}{$channel};
     return unless $table;
 
-    my $conn = $self->{conn};
+    my $dbh = $self->{dbh};
+    my @binds;
+    my $need_reverse;
+    my $query = "SELECT *, unix_timestamp(`time`) AS time_unix FROM $table ";
 
-    # Lowlevel database actions
-    $conn->run(
-        sub {
-            my $dbh = shift;
-            warn "Starting rom $params->{start} - $params->{size}";
-            my @binds;
-            my $need_reverse;
-            my $query =
-              "SELECT *, unix_timestamp(`time`) AS time_unix FROM $table ";
+    if ($params->{start}) {
+        $query .= "WHERE id >= ?";
+        push @binds, $params->{start};
+    }
+    else {
+        $need_reverse++;
+    }
+    my $order = $need_reverse ? 'DESC' : 'ASC';
+    $query .= " ORDER BY `time` $order, id $order LIMIT ?";
+    push @binds, $params->{size};
 
-            if ($params->{start}) {
-                $query .= "WHERE id >= ?";
-                push @binds, $params->{start};
-            }
-            else {
-                $need_reverse++;
-            }
-            my $order = $need_reverse ? 'DESC' : 'ASC';
-            $query .= " ORDER BY `time` $order, id $order LIMIT ?";
-            push @binds, $params->{size};
+    my $data = $dbh->selectall_arrayref($query, {Slice => {}}, @binds);
 
-            my $data =
-              $dbh->selectall_arrayref($query, {Slice => {}}, @binds);
-
-            return $need_reverse ? [reverse @$data] : $data;
-        }
-    );
+    return $need_reverse ? [reverse @$data] : $data;
 }
 
 sub _channel_to_table {
@@ -75,21 +65,14 @@ sub _channel_table_exists {
         return $self->{channels}{$chan};
     }
 
-    my $conn = $self->{conn};
-    $conn->run(
-        sub {
-            my $dbh = shift;
+    my $dbh = $self->{dbh};
 
-            my ($table) =
-              $dbh->selectrow_array('SHOW TABLE STATUS WHERE NAME = ?',
-                undef, $self->_channel_to_table($chan));
+    my ($table) = $dbh->selectrow_array('SHOW TABLE STATUS WHERE NAME = ?',
+        undef, $self->_channel_to_table($chan));
 
-            return unless $table;
+    return unless $table;
 
-            return $self->{channels}{$chan} =
-              $dbh->quote_identifier($table);
-        }
-    );
+    return $self->{channels}{$chan} = $dbh->quote_identifier($table);
 }
 
 sub _create_table_for_channel {
@@ -99,14 +82,11 @@ sub _create_table_for_channel {
 
     if (exists $self->{channels}{$table}) { return 1 }
 
-    my $conn = $self->{conn};
-    $conn->run(
-        sub {
-            my $dbh = shift;
+    my $dbh = $self->{dbh};
 
-            my $qtable = $dbh->quote_identifier($table);
+    my $qtable = $dbh->quote_identifier($table);
 
-            $dbh->do("
+    $dbh->do("
                 CREATE TABLE ${qtable} (
                     `id` int(10) unsigned NOT NULL auto_increment,
                     `time` timestamp NOT NULL default CURRENT_TIMESTAMP,
@@ -118,9 +98,7 @@ sub _create_table_for_channel {
                     PRIMARY KEY  (`id`)
                 ) DEFAULT CHARSET=utf8 COMMENT=?", undef, $table) or return;
 
-            return $self->{channels}{$table} = $qtable;
-        }
-    );
+    return $self->{channels}{$table} = $qtable;
 }
 
 sub write_event {
@@ -154,21 +132,15 @@ sub write_event {
 
     }
 
-    my $conn = $self->{conn};
-    $conn->run(
-        sub {
-            my $dbh = shift;
-            my $query =
-              "INSERT INTO $table (nick,sender,message,event) VALUES (?, ?, ?, ?)";
+    my $dbh = $self->{dbh};
+    my $query =
+      "INSERT INTO $table (nick,sender,message,event) VALUES (?, ?, ?, ?)";
 
-            my $result =
-              $dbh->do($query, undef,
-                @{$line}{qw/nickname sender message type/});
+    my $result =
+      $dbh->do($query, undef, @{$line}{qw/nickname sender message type/});
 
-            if   ($result) { return 1 }
-            else           { return 0 }
-        }
-    );
+    if   ($result) { return 1 }
+    else           { return 0 }
 }
 
 1;

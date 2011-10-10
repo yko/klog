@@ -1,6 +1,5 @@
 package Klog::Model::MySQL;
 require Class::Load;
-require DBIx::Connector;
 
 sub new {
     my $class = shift;
@@ -10,19 +9,23 @@ sub new {
     }
     my $config = $self->{config};
 
-    # FIXME: very unsafe way to build DSN
-    my $dsn = 'dbi:mysql:';
+    my $dsn = 'dbi:mysql';
+
     if (exists $config->{driver_opts}) {
-        $dsn .= ';' . $config->{driver_opts};
+        $dsn .= "($config->{driver_opts})";
     }
+    $dsn .= ':';
+
+    my @pairs;
     for (qw/database host port/) {
         if (exists $config->{$_}) {
-            $dsn .= ";${_}=" . $config->{$_};
+            push @pairs, "${_}=" . $config->{$_};
         }
     }
 
-    $self->{conn} =
-      DBIx::Connector->new($dsn, $config->{user}, $config->{password});
+    $dsn .= join ';', @pairs;
+
+    $self->{dbh} ||= DBI->connect($dsn, $config->{user}, $config->{password});
 
     $self;
 }
@@ -34,7 +37,7 @@ sub build {
     my $class = join '::', __PACKAGE__, $name;
     Class::Load::load_class($class);
 
-    my $model = $class->new(conn => $self->{conn});
+    my $model = $class->new(dbh => $self->{dbh});
 }
 
 1;
