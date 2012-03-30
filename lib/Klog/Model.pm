@@ -3,6 +3,8 @@ package Klog::Model;
 use strict;
 use warnings;
 
+use DBI;
+
 sub new { my $class = shift; bless {@_}, $class }
 
 sub builder {
