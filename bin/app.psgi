@@ -6,6 +6,6 @@ use lib "$Bin/../lib";
 
 use Klog::Web;
 
-my $app = Klog::Web->new;
+my $app = Klog::Web->new( root_dir => "$Bin/.." );
 
 $app->to_psgi;

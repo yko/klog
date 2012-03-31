@@ -21,9 +21,13 @@ our $VERSION = 0.03;
 
 sub new {
     my $class = shift;
+
     my $self = bless {@_}, $class;
     $self->{renderer} = Text::Caml->new;
-    $self->{renderer}->set_templates_path('templates');
+
+    my $tmpl_path = ($self->{root_dir} ? $self->{root_dir} . '/' : '') . 
+        'templates';
+    $self->{renderer}->set_templates_path($tmpl_path);
 
     $self->setup_routes;
 
