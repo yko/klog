@@ -72,11 +72,8 @@ sub render_navbar {
 
     return unless $need_navbar;
 
-    if ($need_navbar) {
-        $nav_param->{pos} = $self->{start};
-        return $self->render_template('navbar', %$nav_param);
-    }
-    return;
+    $nav_param->{pos} = $self->{start};
+    return $self->render_template('navbar', %$nav_param);
 }
 
 sub render_message {
