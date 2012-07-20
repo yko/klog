@@ -7,6 +7,7 @@ use Text::Caml;
 use DBI;
 use Encode;
 use List::Util 'max', 'min';
+use Scalar::Util qw/weaken/;
 use URI::Find;
 
 sub index {
@@ -118,7 +119,12 @@ sub render_message {
 
 sub uri_finder {
     my $self = shift;
-    $self->{uri_finder} ||= URI::Find->new(sub { $self->replace_urls(@_) })
+
+    weaken($self);
+
+    $self->{uri_finder} ||= URI::Find->new(
+        sub { $self->replace_urls(@_) }
+    );
 }
 
 sub replace_urls {
