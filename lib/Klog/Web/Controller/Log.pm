@@ -7,6 +7,7 @@ use Text::Caml;
 use DBI;
 use Encode;
 use List::Util 'max', 'min';
+use Scalar::Util qw/weaken/;
 use URI::Find;
 
 sub index {
@@ -72,11 +73,8 @@ sub render_navbar {
 
     return unless $need_navbar;
 
-    if ($need_navbar) {
-        $nav_param->{pos} = $self->{start};
-        return $self->render_template('navbar', %$nav_param);
-    }
-    return;
+    $nav_param->{pos} = $self->{start};
+    return $self->render_template('navbar', %$nav_param);
 }
 
 sub render_message {
@@ -121,7 +119,12 @@ sub render_message {
 
 sub uri_finder {
     my $self = shift;
-    $self->{uri_finder} ||= URI::Find->new(sub { $self->replace_urls(@_) })
+
+    weaken($self);
+
+    $self->{uri_finder} ||= URI::Find->new(
+        sub { $self->replace_urls(@_) }
+    );
 }
 
 sub replace_urls {
